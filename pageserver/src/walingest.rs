@@ -143,7 +143,7 @@ impl WalIngest {
         let mut buf = decoded.record.clone();
         buf.advance(decoded.main_data_offset);
 
-        assert!(!self.checkpoint_modified);
+        assert!(!self.checkpoint_modified || !self.shard.is_shard_zero());
         if decoded.xl_xid != pg_constants::INVALID_TRANSACTION_ID
             && self.checkpoint.update_next_xid(decoded.xl_xid)
         {
@@ -565,8 +565,8 @@ impl WalIngest {
                 .await?;
         }
 
-        // If checkpoint data was updated, store the new version in the repository
-        if self.checkpoint_modified {
+        // If checkpoint data was updated, store the new version in the repository (on shard zero only)
+        if self.checkpoint_modified && self.shard.is_shard_zero() {
             let new_checkpoint_bytes = self.checkpoint.encode()?;
 
             modification.put_checkpoint(new_checkpoint_bytes)?;
