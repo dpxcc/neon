@@ -7,7 +7,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import boto3
 import toml
@@ -20,7 +20,7 @@ from fixtures.log_helper import log
 from fixtures.pageserver.common_types import IndexPartDump
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
 
 TIMELINE_INDEX_PART_FILE_NAME = "index_part.json"
@@ -85,11 +85,11 @@ class LocalFsStorage:
 
     def timeline_latest_generation(
         self, tenant_id: TenantId, timeline_id: TimelineId
-    ) -> Optional[int]:
+    ) -> int | None:
         timeline_files = os.listdir(self.timeline_path(tenant_id, timeline_id))
         index_parts = [f for f in timeline_files if f.startswith("index_part")]
 
-        def parse_gen(filename: str) -> Optional[int]:
+        def parse_gen(filename: str) -> int | None:
             log.info(f"parsing index_part '{filename}'")
             parts = filename.split("-")
             if len(parts) == 2:
@@ -116,7 +116,7 @@ class LocalFsStorage:
         tenant_id: TenantId,
         timeline_id: TimelineId,
         local_name: str,
-        generation: Optional[int] = None,
+        generation: int | None = None,
     ):
         if generation is None:
             generation = self.timeline_latest_generation(tenant_id, timeline_id)
@@ -158,17 +158,17 @@ class LocalFsStorage:
 class S3Storage:
     bucket_name: str
     bucket_region: str
-    access_key: Optional[str]
-    secret_key: Optional[str]
-    aws_profile: Optional[str]
+    access_key: str | None
+    secret_key: str | None
+    aws_profile: str | None
     prefix_in_bucket: str
     client: S3Client
     cleanup: bool
     """Is this MOCK_S3 (false) or REAL_S3 (true)"""
     real: bool
-    endpoint: Optional[str] = None
+    endpoint: str | None = None
     """formatting deserialized with humantime crate, for example "1s"."""
-    custom_timeout: Optional[str] = None
+    custom_timeout: str | None = None
 
     def access_env_vars(self) -> dict[str, str]:
         if self.aws_profile is not None:
@@ -266,12 +266,10 @@ class S3Storage:
     def tenants_path(self) -> str:
         return f"{self.prefix_in_bucket}/tenants"
 
-    def tenant_path(self, tenant_id: Union[TenantShardId, TenantId]) -> str:
+    def tenant_path(self, tenant_id: TenantShardId | TenantId) -> str:
         return f"{self.tenants_path()}/{tenant_id}"
 
-    def timeline_path(
-        self, tenant_id: Union[TenantShardId, TenantId], timeline_id: TimelineId
-    ) -> str:
+    def timeline_path(self, tenant_id: TenantShardId | TenantId, timeline_id: TimelineId) -> str:
         return f"{self.tenant_path(tenant_id)}/timelines/{timeline_id}"
 
     def get_latest_index_key(self, index_keys: list[str]) -> str:
@@ -309,7 +307,7 @@ class S3Storage:
         assert self.real is False
 
 
-RemoteStorage = Union[LocalFsStorage, S3Storage]
+RemoteStorage = LocalFsStorage | S3Storage
 
 
 @enum.unique
@@ -325,8 +323,8 @@ class RemoteStorageKind(str, enum.Enum):
         run_id: str,
         test_name: str,
         user: RemoteStorageUser,
-        bucket_name: Optional[str] = None,
-        bucket_region: Optional[str] = None,
+        bucket_name: str | None = None,
+        bucket_region: str | None = None,
     ) -> RemoteStorage:
         if self == RemoteStorageKind.LOCAL_FS:
             return LocalFsStorage(LocalFsStorage.component_path(repo_dir, user))

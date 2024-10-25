@@ -2,16 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import pytest
 from fixtures.log_helper import log
 from fixtures.neon_fixtures import NeonEnvBuilder, wait_for_last_flush_lsn
 from fixtures.pageserver.http import HistoricLayerInfo, LayerMapInfo
 from fixtures.utils import human_bytes
-
-if TYPE_CHECKING:
-    from typing import Union
 
 
 def test_ingesting_large_batches_of_images(neon_env_builder: NeonEnvBuilder, build_type: str):
@@ -112,14 +108,12 @@ def test_ingesting_large_batches_of_images(neon_env_builder: NeonEnvBuilder, bui
 
 @dataclass
 class Histogram:
-    buckets: list[Union[int, float]]
+    buckets: list[int | float]
     counts: list[int]
     sums: list[int]
 
 
-def histogram_historic_layers(
-    infos: LayerMapInfo, minimum_sizes: list[Union[int, float]]
-) -> Histogram:
+def histogram_historic_layers(infos: LayerMapInfo, minimum_sizes: list[int | float]) -> Histogram:
     def log_layer(layer: HistoricLayerInfo) -> HistoricLayerInfo:
         log.info(
             f"{layer.layer_file_name} {human_bytes(layer.layer_file_size)} ({layer.layer_file_size} bytes)"
@@ -131,7 +125,7 @@ def histogram_historic_layers(
     return histogram(sizes, minimum_sizes)
 
 
-def histogram(sizes: Iterable[int], minimum_sizes: list[Union[int, float]]) -> Histogram:
+def histogram(sizes: Iterable[int], minimum_sizes: list[int | float]) -> Histogram:
     assert all(minimum_sizes[i] < minimum_sizes[i + 1] for i in range(len(minimum_sizes) - 1))
     buckets = list(enumerate(minimum_sizes))
     counts = [0 for _ in buckets]

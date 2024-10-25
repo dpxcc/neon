@@ -4,7 +4,6 @@ import enum
 import json
 import os
 import time
-from typing import TYPE_CHECKING
 
 import pytest
 from fixtures.log_helper import log
@@ -15,10 +14,6 @@ from fixtures.neon_fixtures import (
 from fixtures.pageserver.http import PageserverApiException
 from fixtures.utils import wait_until
 from fixtures.workload import Workload
-
-if TYPE_CHECKING:
-    from typing import Optional
-
 
 AGGRESIVE_COMPACTION_TENANT_CONF = {
     # Disable gc and compaction. The test runs compaction manually.
@@ -126,7 +121,7 @@ LARGE_STRIPES = 32768
     "shard_count,stripe_size", [(None, None), (4, TINY_STRIPES), (4, LARGE_STRIPES)]
 )
 def test_sharding_compaction(
-    neon_env_builder: NeonEnvBuilder, stripe_size: int, shard_count: Optional[int]
+    neon_env_builder: NeonEnvBuilder, stripe_size: int, shard_count: int | None
 ):
     """
     Use small stripes, small layers, and small compaction thresholds to exercise how compaction

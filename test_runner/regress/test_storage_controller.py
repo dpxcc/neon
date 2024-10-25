@@ -5,7 +5,7 @@ import json
 import threading
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -55,7 +55,7 @@ from werkzeug.wrappers.request import Request
 from werkzeug.wrappers.response import Response
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Union
+    from typing import Any
 
 
 def get_node_shard_counts(env: NeonEnv, tenant_ids):
@@ -592,7 +592,7 @@ def test_storage_controller_compute_hook(
 
     # Initial notification from tenant creation
     assert len(notifications) == 1
-    expect: dict[str, Union[list[dict[str, int]], str, None, int]] = {
+    expect: dict[str, list[dict[str, int]] | str | None | int] = {
         "tenant_id": str(env.initial_tenant),
         "stripe_size": None,
         "shards": [{"node_id": int(env.pageservers[0].id), "shard_number": 0}],
@@ -707,7 +707,7 @@ def test_storage_controller_stuck_compute_hook(
 
     # Initial notification from tenant creation
     assert len(notifications) == 1
-    expect: dict[str, Union[list[dict[str, int]], str, None, int]] = {
+    expect: dict[str, list[dict[str, int]] | str | None | int] = {
         "tenant_id": str(env.initial_tenant),
         "stripe_size": None,
         "shards": [{"node_id": int(env.pageservers[0].id), "shard_number": 0}],
@@ -1047,7 +1047,7 @@ def test_storage_controller_s3_time_travel_recovery(
     )
 
     time.sleep(4)
-    ts_before_disaster = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+    ts_before_disaster = datetime.now(tz=UTC).replace(tzinfo=None)
     time.sleep(4)
 
     # Simulate a "disaster": delete some random files from remote storage for one of the shards
@@ -1071,7 +1071,7 @@ def test_storage_controller_s3_time_travel_recovery(
         pass
 
     time.sleep(4)
-    ts_after_disaster = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+    ts_after_disaster = datetime.now(tz=UTC).replace(tzinfo=None)
     time.sleep(4)
 
     # Do time travel recovery
@@ -2272,7 +2272,7 @@ def test_storage_controller_node_deletion(
 @pytest.mark.parametrize("shard_count", [None, 2])
 def test_storage_controller_metadata_health(
     neon_env_builder: NeonEnvBuilder,
-    shard_count: Optional[int],
+    shard_count: int | None,
 ):
     """
     Create three tenants A, B, C.

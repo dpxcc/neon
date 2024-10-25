@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 from contextlib import closing
-from typing import Optional
 
 import pytest
 from fixtures.log_helper import log
@@ -156,7 +155,7 @@ def test_pageserver_restart(neon_env_builder: NeonEnvBuilder):
 @pytest.mark.timeout(540)
 @pytest.mark.parametrize("shard_count", [None, 4])
 def test_pageserver_chaos(
-    neon_env_builder: NeonEnvBuilder, build_type: str, shard_count: Optional[int]
+    neon_env_builder: NeonEnvBuilder, build_type: str, shard_count: int | None
 ):
     if build_type == "debug":
         pytest.skip("times out in debug builds")
