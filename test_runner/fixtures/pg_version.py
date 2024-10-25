@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import os
+from enum import StrEnum
 
 import pytest
 from typing_extensions import override
@@ -12,9 +13,8 @@ This fixture is used to determine which version of Postgres to use for tests.
 
 
 # Inherit PgVersion from str rather than int to make it easier to pass as a command-line argument
-# TODO: use enum.StrEnum for Python >= 3.11
 @enum.unique
-class PgVersion(str, enum.Enum):
+class PgVersion(StrEnum):
     V14 = "14"
     V15 = "15"
     V16 = "16"
@@ -28,7 +28,6 @@ class PgVersion(str, enum.Enum):
     def __repr__(self) -> str:
         return f"'{self.value}'"
 
-    # Make this explicit for Python 3.11 compatibility, which changes the behavior of enums
     @override
     def __str__(self) -> str:
         return self.value

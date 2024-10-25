@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import enum
 import json
 import os
 import time
+from enum import StrEnum
 
 import pytest
 from fixtures.log_helper import log
@@ -214,7 +214,7 @@ def test_sharding_compaction(
     workload.validate()
 
 
-class CompactionAlgorithm(str, enum.Enum):
+class CompactionAlgorithm(StrEnum):
     LEGACY = "legacy"
     TIERED = "tiered"
 
