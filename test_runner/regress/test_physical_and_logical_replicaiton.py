@@ -9,12 +9,11 @@ def test_physical_and_logical_replication(neon_simple_env: NeonEnv, vanilla_pg):
     """Test read replica of a primary which has a logical replication publication"""
     env = neon_simple_env
 
-    n_records = 1000000
+    n_records = 200000
 
     primary = env.endpoints.create_start(
         branch_name="main",
         endpoint_id="primary",
-        config_lines=["min_wal_size=32MB", "max_wal_size=64MB"],
     )
     p_con = primary.connect()
     p_cur = p_con.cursor()
@@ -27,22 +26,28 @@ def test_physical_and_logical_replication(neon_simple_env: NeonEnv, vanilla_pg):
     connstr = primary.connstr().replace("'", "''")
     vanilla_pg.safe_psql(f"create subscription sub1 connection '{connstr}' publication pub1")
 
-    time.sleep(1)
-    secondary = env.endpoints.new_replica_start(
-        origin=primary,
-        endpoint_id="secondary",
-        config_lines=["min_wal_size=32MB", "max_wal_size=64MB"],
-    )
-    s_con = secondary.connect()
-    s_cur = s_con.cursor()
-
     for pk in range(n_records):
         p_cur.execute("insert into t (pk) values (%s)", (pk,))
 
-    # Wait at least 15 seconds until LR snapshots are persisted
+    # LR snapshot is stored each 15 seconds
     time.sleep(16)
 
+    # start replica
+    secondary = env.endpoints.new_replica_start(
+        origin=primary,
+        endpoint_id="secondary",
+    )
+
+    s_con = secondary.connect()
+    s_cur = s_con.cursor()
+
     logical_replication_sync(vanilla_pg, primary)
+
     assert vanilla_pg.safe_psql("select count(*) from t")[0][0] == n_records
     s_cur.execute("select count(*) from t")
     assert s_cur.fetchall()[0][0] == n_records
+
+    primary.stop()
+    time.sleep(1)
+    secondary.stop()
+    assert not secondary.log_contains("cannot make new WAL entries during recovery")
