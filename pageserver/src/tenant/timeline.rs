@@ -851,6 +851,10 @@ pub(crate) enum ShutdownMode {
     /// While we are flushing, we continue to accept read I/O for LSNs ingested before
     /// the call to [`Timeline::shutdown`].
     FreezeAndFlush,
+    /// More graceful shutdown. Despite freezing and flushing the layers, it will also clear the
+    /// upload queue. This is useful when we want to shut down the timeline but will then load it
+    /// without restarting the pageserver (increasing the generation number).
+    FreezeFlushAndUpload,
     /// Shut down immediately, without waiting for any open layers to flush.
     Hard,
 }
@@ -1677,11 +1681,6 @@ impl Timeline {
     pub(crate) async fn shutdown(&self, mode: ShutdownMode) {
         debug_assert_current_span_has_tenant_and_timeline_id();
 
-        let try_freeze_and_flush = match mode {
-            ShutdownMode::FreezeAndFlush => true,
-            ShutdownMode::Hard => false,
-        };
-
         // Regardless of whether we're going to try_freeze_and_flush
         // or not, stop ingesting any more data. Walreceiver only provides
         // cancellation but no "wait until gone", because it uses the Timeline::gate.
@@ -1703,7 +1702,7 @@ impl Timeline {
         // ... and inform any waiters for newer LSNs that there won't be any.
         self.last_record_lsn.shutdown();
 
-        if try_freeze_and_flush {
+        if let ShutdownMode::FreezeAndFlush | ShutdownMode::FreezeFlushAndUpload = mode {
             if let Some((open, frozen)) = self
                 .layers
                 .read()
@@ -1753,6 +1752,12 @@ impl Timeline {
 
         // Ensure Prevent new page service requests from starting.
         self.handles.shutdown();
+
+        if let ShutdownMode::FreezeFlushAndUpload = mode {
+            if let Err(e) = self.remote_client.wait_completion().await {
+                warn!("failed to wait for remote uploads to complete: {e:#}, but continuing shutting down");
+            }
+        }
 
         // Transition the remote_client into a state where it's only useful for timeline deletion.
         // (The deletion use case is why we can't just hook up remote_client to Self::cancel).)
