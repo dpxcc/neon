@@ -17,12 +17,6 @@ function initdb_with_args {
         -U cloud_admin
         -D "$DATA_DIR"
         --locale 'C.UTF-8'
-        --lc-collate 'C.UTF-8'
-        --lc-ctype 'C.UTF-8'
-        --lc-messages 'C.UTF-8'
-        --lc-monetary 'C.UTF-8'
-        --lc-numeric 'C.UTF-8'
-        --lc-time 'C.UTF-8'
         --sysid="$SYSID"
     )
 
