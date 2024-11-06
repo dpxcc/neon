@@ -1746,18 +1746,18 @@ impl Timeline {
             }
         }
 
+        if let ShutdownMode::FreezeFlushAndUpload = mode {
+            if let Err(e) = self.remote_client.wait_completion().await {
+                warn!("failed to wait for remote uploads to complete: {e:#}, but continuing shutting down");
+            }
+        }
+
         // Signal any subscribers to our cancellation token to drop out
         tracing::debug!("Cancelling CancellationToken");
         self.cancel.cancel();
 
         // Ensure Prevent new page service requests from starting.
         self.handles.shutdown();
-
-        if let ShutdownMode::FreezeFlushAndUpload = mode {
-            if let Err(e) = self.remote_client.wait_completion().await {
-                warn!("failed to wait for remote uploads to complete: {e:#}, but continuing shutting down");
-            }
-        }
 
         // Transition the remote_client into a state where it's only useful for timeline deletion.
         // (The deletion use case is why we can't just hook up remote_client to Self::cancel).)
