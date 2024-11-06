@@ -1750,6 +1750,9 @@ impl Timeline {
             if let Err(e) = self.remote_client.wait_completion().await {
                 warn!("failed to wait for remote uploads to complete: {e:#}, but continuing shutting down");
             }
+            if !self.remote_client.no_pending_work() {
+                warn!("still have pending work in remote upload queue, but continuing shutting down anyways");
+            }
         }
 
         // Signal any subscribers to our cancellation token to drop out

@@ -2201,6 +2201,15 @@ impl RemoteTimelineClient {
         inner.initialized_mut()?;
         Ok(UploadQueueAccessor { inner })
     }
+
+    pub(crate) fn no_pending_work(&self) -> bool {
+        let inner = self.upload_queue.lock().unwrap();
+        match &*inner {
+            UploadQueue::Uninitialized => true,
+            UploadQueue::Stopped(_) => true,
+            UploadQueue::Initialized(x) => x.no_pending_work(),
+        }
+    }
 }
 
 pub(crate) struct UploadQueueAccessor<'a> {
